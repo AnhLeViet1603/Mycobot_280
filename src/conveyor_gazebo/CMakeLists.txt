@@ -29,7 +29,7 @@ install(TARGETS ConveyorBelt
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin)
 
-install(DIRECTORY worlds launch
+install(DIRECTORY worlds launch config
   DESTINATION share/${PROJECT_NAME})
 
 # Make the plugin discoverable by gz-sim when this package is sourced.
