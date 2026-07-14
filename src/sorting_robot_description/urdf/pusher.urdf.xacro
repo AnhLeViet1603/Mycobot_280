@@ -10,11 +10,11 @@
 
   <!-- Pose of the pusher base in the world (beside the belt end). -->
   <xacro:property name="base_x" value="0.6"/>
-  <xacro:property name="base_y" value="0.5"/>
-  <xacro:property name="base_z" value="0.575"/>
+  <xacro:property name="base_y" value="0.35"/>
+  <xacro:property name="base_z" value="0.615"/>
 
   <!-- Prismatic stroke (m): 0 = retracted (clear of belt), negative = across. -->
-  <xacro:property name="stroke" value="0.85"/>
+  <xacro:property name="stroke" value="0.70"/>
 
   <material name="pusher_orange">
     <color rgba="0.9 0.45 0.1 1"/>
