@@ -1,0 +1,17 @@
+# Minimal controller set for Phase 6 hand-testing of the pusher joint.
+# Phase 7 adds the state-machine controller node on top of this.
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    pusher_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+pusher_position_controller:
+  ros__parameters:
+    joints:
+      - pusher_joint
+    interface_name: position

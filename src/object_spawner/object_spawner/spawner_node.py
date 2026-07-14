@@ -12,6 +12,7 @@ from rclpy.node import Node
 
 from gz.transport13 import Node as GzNode
 from gz.msgs10.entity_factory_pb2 import EntityFactory
+from gz.msgs10.entity_pb2 import Entity
 from gz.msgs10.boolean_pb2 import Boolean
 
 
@@ -74,19 +75,47 @@ class SpawnerNode(Node):
         self.declare_parameter('jitter_y', 0.1)
         # Relative weights for red / blue / green.
         self.declare_parameter('color_weights', [1.0, 1.0, 1.0])
+        # Seconds a cube lives before being removed at the end of the belt.
+        # Set to 0 to disable automatic despawning.
+        self.declare_parameter('cube_lifetime', 20.0)
 
         self.world = self.get_parameter('world').value
         self.cube_size = self.get_parameter('cube_size').value
         period = self.get_parameter('spawn_period').value
+        self.cube_lifetime = self.get_parameter('cube_lifetime').value
 
         self.gz = GzNode()
         self.service = f'/world/{self.world}/create'
+        self.remove_service = f'/world/{self.world}/remove'
         self.count = 0
+        # (model_name, spawn_time_ns) in spawn order (oldest first).
+        self.spawned = []
 
         self.timer = self.create_timer(period, self.spawn_cube)
+        if self.cube_lifetime > 0:
+            self.despawn_timer = self.create_timer(1.0, self.despawn_expired)
         self.get_logger().info(
             f'object_spawner ready: service [{self.service}], '
-            f'period {period}s')
+            f'period {period}s, cube_lifetime {self.cube_lifetime}s')
+
+    def despawn_expired(self):
+        """Remove cubes older than ``cube_lifetime`` (reached belt end)."""
+        now_ns = self.get_clock().now().nanoseconds
+        while self.spawned:
+            name, spawn_ns = self.spawned[0]
+            if (now_ns - spawn_ns) / 1e9 < self.cube_lifetime:
+                break  # Oldest not expired yet -> none behind it are either.
+            self.spawned.pop(0)
+
+            req = Entity()
+            req.name = name
+            req.type = Entity.MODEL
+            ok, rep = self.gz.request(
+                self.remove_service, req, Entity, Boolean, 1000)
+            if ok and rep.data:
+                self.get_logger().info(f'despawned {name}')
+            else:
+                self.get_logger().warn(f'failed to despawn {name}')
 
     def spawn_cube(self):
         names = list(COLORS.keys())
@@ -113,6 +142,8 @@ class SpawnerNode(Node):
         ok, rep = self.gz.request(
             self.service, req, EntityFactory, Boolean, 1000)
         if ok and rep.data:
+            self.spawned.append(
+                (model_name, self.get_clock().now().nanoseconds))
             self.get_logger().info(
                 f'spawned {model_name} at '
                 f'({x:.2f}, {y:.2f}, {z:.2f})')
