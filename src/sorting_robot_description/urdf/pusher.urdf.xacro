@@ -55,8 +55,12 @@
     <child link="pusher_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-${stroke}" upper="0.0" effort="50.0" velocity="1.5"/>
-    <dynamics damping="1.0" friction="0.5"/>
+    <!-- High effort + speed so the belt-driven cube's resistance is negligible
+         and the stroke always completes within the fixed extend_time, keeping
+         the push timing deterministic for the cubes queued behind. Low
+         damping/friction so the joint is not sluggish. -->
+    <limit lower="-${stroke}" upper="0.0" effort="300.0" velocity="3.0"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
 
   <!-- Paddle that contacts the cube. -->

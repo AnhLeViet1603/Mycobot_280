@@ -34,9 +34,24 @@ class VisionNode(Node):
         self.declare_parameter('min_area', 300.0)
         self.declare_parameter('publish_debug', True)
 
+        # Detection region of interest (pixels). Only blobs inside this box are
+        # reported, so with the camera mounted above the pusher a cube is
+        # "seen" only as it passes right in front of the paddle. Set a small
+        # central box. -1 on a max means "to the image edge".
+        self.declare_parameter('roi_enabled', True)
+        self.declare_parameter('roi_x_min', 220)
+        self.declare_parameter('roi_x_max', 420)
+        self.declare_parameter('roi_y_min', 210)
+        self.declare_parameter('roi_y_max', 270)
+
         self.min_area = self.get_parameter('min_area').value
         self.publish_debug = self.get_parameter('publish_debug').value
         image_topic = self.get_parameter('image_topic').value
+        self.roi_enabled = self.get_parameter('roi_enabled').value
+        self.roi_x_min = self.get_parameter('roi_x_min').value
+        self.roi_x_max = self.get_parameter('roi_x_max').value
+        self.roi_y_min = self.get_parameter('roi_y_min').value
+        self.roi_y_max = self.get_parameter('roi_y_max').value
 
         self.bridge = CvBridge()
         self.sub = self.create_subscription(
@@ -51,6 +66,13 @@ class VisionNode(Node):
             f'vision_node ready: subscribing [{image_topic}], '
             f'min_area {self.min_area}')
 
+    def _roi_bounds(self, w, h):
+        x1 = self.roi_x_max if self.roi_x_max >= 0 else w
+        y1 = self.roi_y_max if self.roi_y_max >= 0 else h
+        x0 = max(0, min(self.roi_x_min, w))
+        y0 = max(0, min(self.roi_y_min, h))
+        return x0, min(x1, w), y0, min(y1, h)
+
     def on_image(self, msg: Image):
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -60,12 +82,22 @@ class VisionNode(Node):
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+        h, w = hsv.shape[:2]
+        x0, x1, y0, y1 = self._roi_bounds(w, h)
+
         best = None  # (area, color, cx, cy, contour)
         for color, ranges in HSV_RANGES.items():
             mask = None
             for lo, hi in ranges:
                 m = cv2.inRange(hsv, np.array(lo), np.array(hi))
                 mask = m if mask is None else cv2.bitwise_or(mask, m)
+
+            if self.roi_enabled:
+                # Zero everything outside the ROI so blobs are only found there.
+                mask[:y0, :] = 0
+                mask[y1:, :] = 0
+                mask[:, :x0] = 0
+                mask[:, x1:] = 0
 
             contours, _ = cv2.findContours(
                 mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -100,6 +132,8 @@ class VisionNode(Node):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
         if self.debug_pub is not None:
+            if self.roi_enabled:
+                cv2.rectangle(frame, (x0, y0), (x1, y1), (255, 0, 0), 1)
             dbg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
             dbg.header = msg.header
             self.debug_pub.publish(dbg)

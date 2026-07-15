@@ -100,11 +100,27 @@ class PusherControllerNode(Node):
 
     # --- State machine ---------------------------------------------------
 
-    def _schedule(self, delay: float, action):
-        # One-shot timer: cancel any previous one first.
+    def _clear_timer(self):
+        # rclpy timers are periodic: cancelling stops them firing but leaves
+        # them registered with the executor, which then scans every dead timer
+        # each spin. Destroying them keeps that list from growing without bound
+        # (one push = 4 timers), which is what makes the delays drift longer the
+        # longer the node runs.
         if self._timer is not None:
             self._timer.cancel()
-        self._timer = self.create_timer(delay, action)
+            self.destroy_timer(self._timer)
+            self._timer = None
+
+    def _schedule(self, delay: float, action):
+        # Emulate a one-shot: destroy the previous timer, and have the action
+        # clear this timer before running so the periodic timer never re-fires.
+        self._clear_timer()
+
+        def _once():
+            self._clear_timer()
+            action()
+
+        self._timer = self.create_timer(delay, _once)
 
     def on_reject(self, msg: DetectedObject):
         if self.state is not State.IDLE:
@@ -140,9 +156,7 @@ class PusherControllerNode(Node):
         self._schedule(self.retract_time, self._do_idle)
 
     def _do_idle(self):
-        if self._timer is not None:
-            self._timer.cancel()
-            self._timer = None
+        # _once() already cleared the timer before calling us.
         self.state = State.IDLE
         self.get_logger().info(f'IDLE (done sweeping {self._pending})')
         self._pending = None

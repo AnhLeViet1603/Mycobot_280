@@ -84,10 +84,12 @@
       </plugin>
     </model>
 
-    <!-- Overhead camera looking straight down at the belt. -->
+    <!-- Overhead camera looking straight down, placed directly above the
+         pusher (x=0.6) so a cube is detected right where it reaches the paddle,
+         removing the travel gap between detection and push. -->
     <model name="camera">
       <static>true</static>
-      <pose>0 0 1.5 0 1.5708 0</pose>
+      <pose>0.6 0 1.5 0 1.5708 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><box><size>0.05 0.05 0.05</size></box></geometry>

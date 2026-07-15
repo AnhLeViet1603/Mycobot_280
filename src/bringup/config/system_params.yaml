@@ -1,0 +1,58 @@
+# Centralized parameters for the full conveyor sorting pipeline (Phase 8).
+# Node names here must match the names the nodes run under in
+# system.launch.py.
+
+object_spawner:
+  ros__parameters:
+    world: conveyor_world
+    spawn_period: 4.0        # seconds between cubes
+    cube_size: 0.05
+    spawn_x: -0.9            # head of the belt
+    spawn_y: 0.0
+    spawn_z: 0.6
+    jitter_y: 0.08
+    color_weights: [1.0, 1.0, 1.0]   # red / blue / green
+    cube_lifetime: 20.0     # despawn at end of belt
+
+vision_node:
+  ros__parameters:
+    image_topic: /camera/image_raw
+    min_area: 300.0
+    publish_debug: true
+    # Only detect inside a small central box, right under the camera = right at
+    # the pusher. A cube is thus reported only as it passes the paddle. The box
+    # is drawn (blue) on /vision/debug_image. Widen/shift after watching it.
+    roi_enabled: true
+    roi_x_min: 220
+    roi_x_max: 420
+    roi_y_min: 210
+    roi_y_max: 270
+
+decision_node:
+  ros__parameters:
+    accepted_color: blue    # blue -> KEEP, everything else -> REJECT
+    debounce_sec: 2.0
+    # The vision ROI already restricts detection to the small box at the
+    # pusher, so a detection == cube at the pusher. Gate off ('none' = fire on
+    # first sight); the ROI is what times the push now. debounce collapses the
+    # burst while the cube is inside the box.
+    trigger_axis: "y"       # quoted: bare y/n/on/off are YAML booleans
+    trigger_line_px: 200.0
+    trigger_direction: none
+    debug_positions: true   # watch det px to size/position the ROI, then false
+
+pusher_controller_node:
+  ros__parameters:
+    command_topic: /pusher_position_controller/commands
+    # Belt -Y edge is at y=-0.25; paddle centre = 0.35 + joint. To shove the
+    # cube fully off the edge push near full stroke (-0.70): -0.68 puts the
+    # cube centre at ~ -0.37, clear of the belt. -0.6 only reached ~ -0.29
+    # (right on the lip), so the cube did not fall off.
+    extend_position: -0.68
+    retract_position: 0.0
+    # ROI puts detection right at the pusher, so only a short delay for the
+    # paddle to reach the cube. Tune this first if slightly early/late.
+    trigger_delay: 0.2
+    extend_time: 0.7        # deeper stroke needs a touch longer to travel out
+    hold_time: 1.2          # hold long enough for the cube to slide off/fall
+    retract_time: 0.7
