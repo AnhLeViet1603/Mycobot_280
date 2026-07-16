@@ -30,7 +30,7 @@ class DecisionNode(Node):
         super().__init__('decision_node')
 
         # Color that is allowed to pass; anything else is rejected.
-        self.declare_parameter('accepted_color', 'blue')
+        self.declare_parameter('accepted_color', ['blue'])
         # Minimum seconds between two reject commands, so a single cube that
         # stays in frame for many frames only triggers one reject.
         self.declare_parameter('debounce_sec', 2.0)
@@ -86,7 +86,7 @@ class DecisionNode(Node):
                 f'{msg.position.y:.0f}) area={msg.position.z:.0f}',
                 throttle_duration_sec=0.3)
 
-        if msg.class_name == self.accepted_color:
+        if msg.class_name in self.accepted_color:
             return  # KEEP: let it pass to the end of the belt.
 
         # Only fire once the cube has reached the pusher-side trigger line.

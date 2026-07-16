@@ -30,7 +30,7 @@ vision_node:
 
 decision_node:
   ros__parameters:
-    accepted_color: blue    # blue -> KEEP, everything else -> REJECT
+    accepted_color: ["blue"]    # blue -> KEEP, everything else -> REJECT
     debounce_sec: 2.0
     # The vision ROI already restricts detection to the small box at the
     # pusher, so a detection == cube at the pusher. Gate off ('none' = fire on
@@ -52,7 +52,7 @@ pusher_controller_node:
     retract_position: 0.0
     # ROI puts detection right at the pusher, so only a short delay for the
     # paddle to reach the cube. Tune this first if slightly early/late.
-    trigger_delay: 0.2
+    trigger_delay: 0.0
     extend_time: 0.7        # deeper stroke needs a touch longer to travel out
     hold_time: 1.2          # hold long enough for the cube to slide off/fall
     retract_time: 0.7
