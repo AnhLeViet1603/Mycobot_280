@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    Inertial gốc của myCobot không có trong URDF thật.
+    Vì demo dùng position control (kinematic), giá trị inertia không cần chính xác,
+    chỉ cần dương và positive-definite để Gazebo không báo lỗi / link không "bay".
+    Dùng khối hộp đặc quy ước quanh gốc link.
+  -->
+  <xacro:macro name="box_inertial" params="mass:=0.2 size:=0.04">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <xacro:property name="i" value="${(mass * (2.0 * size * size)) / 12.0}"/>
+      <inertia ixx="${i}" ixy="0.0" ixz="0.0"
+               iyy="${i}" iyz="0.0" izz="${i}"/>
+    </inertial>
+  </xacro:macro>
+</robot>

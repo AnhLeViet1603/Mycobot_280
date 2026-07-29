@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    Plugin Gazebo Sim (Harmonic / gz-sim8).
+    - gz_ros2_control: cầu nối ros2_control <-> Gazebo, nạp file controllers YAML.
+    - LƯU Ý (lỗi đã biết): đường dẫn file YAML này KHÔNG được chứa chuỗi "robot_description",
+      nếu không controller_manager sẽ fail. [[gz-ros2-control-robot-description-path-bug]]
+  -->
+  <xacro:macro name="mycobot_280_gazebo" params="controllers_config">
+    <gazebo>
+      <plugin filename="gz_ros2_control-system"
+              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>${controllers_config}</parameters>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

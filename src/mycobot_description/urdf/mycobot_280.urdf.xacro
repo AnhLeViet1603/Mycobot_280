@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mycobot_280">
+  <!--
+    URDF top-level cho myCobot 280 + adaptive gripper trong Gazebo Sim.
+    Args:
+      use_gz            : true  -> nạp ros2_control + plugin gz (dùng khi chạy Gazebo)
+                          false -> chỉ hình học, để xem trong RViz với joint_state_publisher_gui
+      use_world_fixed   : true  -> hàn g_base vào link `world` (cánh tay đứng yên, base cố định)
+      controllers_config: đường dẫn file YAML controllers (nạp bởi gz_ros2_control)
+  -->
+  <xacro:arg name="use_gz" default="true"/>
+  <xacro:arg name="use_world_fixed" default="true"/>
+  <xacro:arg name="controllers_config" default=""/>
+
+  <xacro:include filename="$(find mycobot_description)/urdf/inertials.xacro"/>
+  <xacro:include filename="$(find mycobot_description)/urdf/mycobot_280_arm.xacro"/>
+  <xacro:include filename="$(find mycobot_description)/urdf/mycobot_280_gripper.xacro"/>
+
+  <!-- Base cố định -->
+  <xacro:if value="$(arg use_world_fixed)">
+    <link name="world"/>
+    <joint name="world_to_g_base" type="fixed">
+      <parent link="world"/>
+      <child link="g_base"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:if>
+
+  <!-- ros2_control + plugin Gazebo -->
+  <xacro:if value="$(arg use_gz)">
+    <xacro:include filename="$(find mycobot_description)/urdf/mycobot_280.ros2_control.xacro"/>
+    <xacro:include filename="$(find mycobot_description)/urdf/mycobot_280.gazebo.xacro"/>
+    <xacro:mycobot_280_ros2_control name="GazeboSimSystem"/>
+    <xacro:mycobot_280_gazebo controllers_config="$(arg controllers_config)"/>
+  </xacro:if>
+</robot>

@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    ros2_control interface cho Gazebo Sim (gz_ros2_control).
+    6 khớp tay + gripper_controller đều dùng position command.
+    Các khớp mimic KHÔNG khai báo ở đây - gz_ros2_control tự xử lý qua tag <mimic> trong URDF.
+  -->
+  <xacro:macro name="mycobot_280_ros2_control" params="name:=GazeboSimSystem">
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </hardware>
+
+      <xacro:macro name="arm_joint" params="jname">
+        <joint name="${jname}">
+          <command_interface name="position"/>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
+      </xacro:macro>
+
+      <xacro:arm_joint jname="joint2_to_joint1"/>
+      <xacro:arm_joint jname="joint3_to_joint2"/>
+      <xacro:arm_joint jname="joint4_to_joint3"/>
+      <xacro:arm_joint jname="joint5_to_joint4"/>
+      <xacro:arm_joint jname="joint6_to_joint5"/>
+      <xacro:arm_joint jname="joint6output_to_joint6"/>
+
+      <joint name="gripper_controller">
+        <command_interface name="position"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+  </xacro:macro>
+</robot>
