@@ -26,7 +26,7 @@
       <xacro:arm_joint jname="joint6_to_joint5"/>
       <xacro:arm_joint jname="joint6output_to_joint6"/>
 
-      <joint name="gripper_controller">
+      <joint name="gripper_finger_joint">
         <command_interface name="position"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>

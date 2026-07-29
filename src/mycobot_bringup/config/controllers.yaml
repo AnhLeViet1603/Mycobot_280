@@ -1,0 +1,41 @@
+# ros2_control controllers cho myCobot 280 (nạp bởi gz_ros2_control).
+# LƯU Ý: đường dẫn file này KHÔNG được chứa chuỗi "robot_description"
+# (bug đã biết khiến controller_manager fail load).
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+arm_controller:
+  ros__parameters:
+    joints:
+      - joint2_to_joint1
+      - joint3_to_joint2
+      - joint4_to_joint3
+      - joint5_to_joint4
+      - joint6_to_joint5
+      - joint6output_to_joint6
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+
+gripper_controller:
+  ros__parameters:
+    joints:
+      - gripper_finger_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity

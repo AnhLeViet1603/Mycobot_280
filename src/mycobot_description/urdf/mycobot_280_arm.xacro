@@ -18,8 +18,8 @@
       <origin xyz="-0.01 0 -0.032" rpy="0 0 1.5708"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/G_base.dae"/></geometry>
-      <origin xyz="0.0 0 -0.032" rpy="0 0 1.5708"/>
+      <geometry><box size="0.09 0.09 0.06"/></geometry>
+      <origin xyz="0 0 -0.02" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.5" size="0.05"/>
   </link>
@@ -30,8 +30,8 @@
       <origin xyz="0 0 0" rpy="0 0 -3.14159"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint1.dae"/></geometry>
-      <origin xyz="0 0 0" rpy="0 0 -3.14159"/>
+      <geometry><box size="0.08 0.08 0.09"/></geometry>
+      <origin xyz="0 0 0.06" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.3" size="0.04"/>
   </link>
@@ -42,8 +42,8 @@
       <origin xyz="0 0 -0.06096" rpy="0 0 -1.5708"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint2.dae"/></geometry>
-      <origin xyz="0 0 -0.06096" rpy="0 0 -1.5708"/>
+      <geometry><box size="0.06 0.06 0.08"/></geometry>
+      <origin xyz="0 0 -0.03" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.3" size="0.04"/>
   </link>
@@ -54,8 +54,8 @@
       <origin xyz="0 0 0.03256" rpy="0 -1.5708 0"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint3.dae"/></geometry>
-      <origin xyz="0 0 0.03256" rpy="0 -1.5708 0"/>
+      <geometry><box size="0.09 0.06 0.06"/></geometry>
+      <origin xyz="-0.05 0 0.03" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.25" size="0.04"/>
   </link>
@@ -66,8 +66,8 @@
       <origin xyz="0 0 0.03056" rpy="0 -1.5708 0"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint4.dae"/></geometry>
-      <origin xyz="0 0 0.03056" rpy="0 -1.5708 0"/>
+      <geometry><box size="0.08 0.06 0.06"/></geometry>
+      <origin xyz="-0.04 0 0.03" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.2" size="0.035"/>
   </link>
@@ -78,8 +78,8 @@
       <origin xyz="0 0 -0.03356" rpy="-1.5708 0 0"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint5.dae"/></geometry>
-      <origin xyz="0 0 -0.03356" rpy="-1.5708 0 0"/>
+      <geometry><box size="0.05 0.06 0.05"/></geometry>
+      <origin xyz="0 0 -0.03" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.2" size="0.035"/>
   </link>
@@ -90,8 +90,8 @@
       <origin xyz="0 0 -0.038" rpy="0 0 0"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint6.dae"/></geometry>
-      <origin xyz="0 0 -0.038" rpy="0 0 0"/>
+      <geometry><box size="0.045 0.045 0.03"/></geometry>
+      <origin xyz="0 0 -0.02" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.15" size="0.03"/>
   </link>
@@ -102,8 +102,8 @@
       <origin xyz="0 0 -0.012" rpy="0 0 0"/>
     </visual>
     <collision>
-      <geometry><mesh filename="${mesh}/joint7.dae"/></geometry>
-      <origin xyz="0 0 -0.012" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.04 0.02"/></geometry>
+      <origin xyz="0 0 -0.01" rpy="0 0 0"/>
     </collision>
     <xacro:box_inertial mass="0.1" size="0.02"/>
   </link>

@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!--
+  World cho demo gắp vật của myCobot 280 (Gazebo Sim 8 / Harmonic).
+  Gồm: physics, các system plugin bắt buộc, mặt đất, đèn, và một cái bàn (static box)
+  để đặt cánh tay + vật thể. Cánh tay được spawn ở launch, không nhúng sẵn ở đây.
+-->
+<sdf version="1.10">
+  <world name="pick_world">
+
+    <!-- step 4ms (250Hz): nhẹ CPU hơn nhiều so với 1ms, đủ ổn định cho cánh tay
+         điều khiển vị trí. Tăng RTF trên WSL. Nếu vẫn thấp -> chạy headless (gui:=false). -->
+    <physics name="4ms" type="ignored">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.3 -1</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>50 50</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>50 50</size></plane></geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bàn: hộp tĩnh, mặt bàn ở z = 0.4. Cánh tay và vật đặt lên mặt này. -->
+    <model name="table">
+      <static>true</static>
+      <pose>0 0 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.8 1.2 0.4</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.8 1.2 0.4</size></box></geometry>
+          <material>
+            <ambient>0.4 0.25 0.12 1</ambient>
+            <diffuse>0.55 0.35 0.18 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

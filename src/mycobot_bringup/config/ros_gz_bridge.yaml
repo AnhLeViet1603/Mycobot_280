@@ -1,0 +1,8 @@
+# Cầu nối topic ROS 2 <-> Gazebo Sim.
+# Tối thiểu cần /clock để ROS dùng sim time (use_sim_time).
+# (joint_states + command đi qua gz_ros2_control, không cần bridge.)
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS

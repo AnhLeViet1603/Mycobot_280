@@ -10,6 +10,7 @@
   -->
   <xacro:arg name="use_gz" default="true"/>
   <xacro:arg name="use_world_fixed" default="true"/>
+  <xacro:arg name="mount_z" default="0.0"/>
   <xacro:arg name="controllers_config" default=""/>
 
   <xacro:include filename="$(find mycobot_description)/urdf/inertials.xacro"/>
@@ -19,10 +20,13 @@
   <!-- Base cố định -->
   <xacro:if value="$(arg use_world_fixed)">
     <link name="world"/>
+    <!-- mount_z: chiều cao đặt base so với world (mặt bàn ở 0.4 khi chạy Gazebo).
+         Đặt độ cao ngay tại đây thay vì offset lúc spawn, vì gz ghim link `world`
+         vào gốc thế giới và bỏ qua -z lúc spawn. -->
     <joint name="world_to_g_base" type="fixed">
       <parent link="world"/>
       <child link="g_base"/>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 $(arg mount_z)" rpy="0 0 0"/>
     </joint>
   </xacro:if>
 

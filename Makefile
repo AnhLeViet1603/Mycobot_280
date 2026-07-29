@@ -1,59 +1,74 @@
-# Makefile tiện ích cho ros2_ws (conveyor sorting pipeline)
+# Makefile tiện ích cho ros2_ws (myCobot 280 pick-and-place demo)
 #
-#   make build     -> colcon build + hướng dẫn source
-#   make source    -> in lệnh source (chạy: source install/setup.bash)
-#   make run       -> full pipeline + RViz
-#   make gazebo    -> chỉ Gazebo world (conveyor)
-#   make push      -> kích hoạt (đẩy ra) pusher
-#   make retract   -> thu hồi (kéo về) pusher
-#   make clean     -> xoá build/ install/ log/
+# Dùng --symlink-install: sửa launch/urdf/config/python KHÔNG cần build lại;
+# chỉ build lại khi thêm file mới hoặc đổi CMakeLists/package.xml.
+#
+#   make            -> build toàn bộ (symlink)
+#   make p=<pkg>    -> build nhanh 1 package (vd: make p=mycobot_description)
+#   make view       -> mở RViz xem robot (Phase 1)
+#   make check      -> parse xacro 2 mode + check_urdf (không cần GUI)
+#   make source     -> in lệnh source
+#   make clean      -> xoá build/ install/ log/
+#   make help       -> danh sách target
 
-# Cho phép ROS/colcon dùng bash và source được setup
 SHELL := /bin/bash
-WS     := $(CURDIR)
+WS    := $(CURDIR)
 
-# Topic điều khiển pusher (forward_command_controller)
-PUSH_TOPIC   := /pusher_position_controller/commands
-PUSH_EXTEND  := -0.68   # vị trí đẩy ra hết hành trình (theo system_params.yaml)
-PUSH_RETRACT := 0.0     # vị trí thu về
+ROS_SETUP  := /opt/ros/jazzy/setup.bash
+WS_SETUP   := $(WS)/install/setup.bash
+DESC_XACRO := $(WS)/src/mycobot_description/urdf/mycobot_280.urdf.xacro
 
-.PHONY: build source run gazebo push retract clean help
+p ?=
 
-## build: colcon build rồi nhắc source
+# Source ROS + workspace (nếu đã build) rồi chạy lệnh $(1)
+define ros_run
+source $(ROS_SETUP) && [ -f $(WS_SETUP) ] && source $(WS_SETUP); $(1)
+endef
+
+.PHONY: all build view check source clean rebuild help
+
+## (mặc định) build toàn bộ workspace
+all: build
+
+## build: colcon build --symlink-install (p=<pkg> để build 1 package)
 build:
-	cd $(WS) && colcon build --symlink-install
-	@echo ""
-	@echo ">> Build xong. Chạy tiếp:  source install/setup.bash"
+	cd $(WS) && source $(ROS_SETUP) && \
+	colcon build --symlink-install $(if $(p),--packages-select $(p),)
+	@echo ">> Xong. Source:  source install/setup.bash"
 
-## source: in lệnh source (make không thể source vào shell cha của bạn)
+## view: mở RViz xem robot (Phase 1)
+view:
+	@$(call ros_run, ros2 launch mycobot_description view_robot.launch.py)
+
+## gz: bringup Gazebo có GUI (world + robot + controllers) (Phase 2)
+gz:
+	@$(call ros_run, ros2 launch mycobot_bringup bringup.launch.py)
+
+## gz-test: bringup headless (không render) - test controller nhanh, RTF cao
+gz-test:
+	@$(call ros_run, ros2 launch mycobot_bringup bringup.launch.py gui:=false)
+
+## kill: dọn server gz còn sót (nếu bị kẹt)
+kill:
+	-pkill -f "gz sim" ; -pkill -f "ruby.*gz"
+
+## check: parse xacro (rviz + gz) và check_urdf, không cần GUI
+check:
+	@$(call ros_run, \
+	  echo '== use_gz:=false ==' && xacro $(DESC_XACRO) use_gz:=false > /tmp/mc_rviz.urdf && \
+	  echo '== use_gz:=true =='  && xacro $(DESC_XACRO) use_gz:=true controllers_config:=/tmp/x.yaml > /tmp/mc_gz.urdf && \
+	  echo '== check_urdf ==' && check_urdf /tmp/mc_rviz.urdf)
+
+## source: in lệnh source (make không source được vào shell cha)
 source:
-	@echo "source $(WS)/install/setup.bash"
+	@echo "source $(WS_SETUP)"
 
-## run: full pipeline + RViz
-run:
-	source /opt/ros/*/setup.bash && source $(WS)/install/setup.bash && \
-		ros2 launch bringup system.launch.py rviz:=true
-
-## gazebo: chỉ chạy Gazebo world (conveyor + camera bridge)
-gazebo:
-	source /opt/ros/*/setup.bash && source $(WS)/install/setup.bash && \
-		ros2 launch conveyor_gazebo conveyor.launch.py
-
-## push: kích hoạt pusher (đẩy cube ra)
-push:
-	source /opt/ros/*/setup.bash && source $(WS)/install/setup.bash && \
-		ros2 topic pub --once $(PUSH_TOPIC) std_msgs/msg/Float64MultiArray \
-		"{data: [$(PUSH_EXTEND)]}"
-
-## retract: thu hồi pusher (kéo về)
-retract:
-	source /opt/ros/*/setup.bash && source $(WS)/install/setup.bash && \
-		ros2 topic pub --once $(PUSH_TOPIC) std_msgs/msg/Float64MultiArray \
-		"{data: [$(PUSH_RETRACT)]}"
-
-## clean: xoá artifact build
+## clean: xoá build/ install/ log/
 clean:
 	cd $(WS) && rm -rf build install log
+
+## rebuild: clean + build
+rebuild: clean build
 
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
