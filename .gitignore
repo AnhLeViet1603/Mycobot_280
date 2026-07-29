@@ -1,40 +1,5 @@
-# ROS 2 / colcon
 build/
 install/
 log/
-
-# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-.eggs/
-*.egg
-.pytest_cache/
-.mypy_cache/
-.venv/
-venv/
-
-# ros2_control / generated
-*.orig
-
-# Gazebo
-.gazebo/
-*.log
-
-# Editor / OS
-.vscode/
-.idea/
-*.swp
-*~
-.DS_Store
-
-# Models / large assets (bỏ comment nếu cần)
-# meshes/*.stl
-# *.dae
-
-# YOLO weights (nếu dùng)
-*.pt
-*.onnx
-
-.ai/*
-.codegraph/*
+*.pyc
