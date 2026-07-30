@@ -48,6 +48,14 @@ gz:
 gz-test:
 	@$(call ros_run, ros2 launch mycobot_bringup bringup.launch.py gui:=false)
 
+## test-arm: gửi vài pose cho cánh tay (Phase 3, cần Gazebo đang chạy)
+test-arm:
+	@$(call ros_run, ros2 run mycobot_demo test_arm)
+
+## test-gripper: đóng rồi mở gripper (Phase 3). p=open|close để chỉ 1 chiều
+test-gripper:
+	@$(call ros_run, ros2 run mycobot_demo test_gripper $(if $(a),--ros-args -p action:=$(a),))
+
 ## kill: dọn server gz còn sót (nếu bị kẹt)
 kill:
 	-pkill -f "gz sim" ; -pkill -f "ruby.*gz"

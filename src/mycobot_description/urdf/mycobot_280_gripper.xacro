@@ -1,30 +1,27 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!--
-    Gripper thích ứng (adaptive) của myCobot 280.
-    - Chỉ 1 khớp thật `gripper_finger_joint` được điều khiển; 5 khớp còn lại `mimic`.
-      (Đổi tên khớp gốc `gripper_controller` -> `gripper_finger_joint` để KHÔNG trùng
-       tên controller `gripper_controller`, tránh lỗi controller_manager tưởng là
-       reference interface của controller chainable.)
-    - Collision dùng box primitive (không phải mesh) để nhẹ physics, tăng RTF.
-    - `grasp_center`: điểm gắp (attach vật + MoveIt end-effector).
-    - LƯU Ý: physics engine của Gazebo không ràng buộc <mimic> (chỉ cảnh báo, non-fatal);
-      với grasp attach/detach thì không ảnh hưởng.
+    Gripper myCobot 280 (bản đơn giản hoá cho Gazebo).
+    - Hai khớp gốc ngón được ĐIỀU KHIỂN đối xứng:
+        gripper_finger_joint  (ngón trái, gripper_left3)   : đóng khi ÂM
+        gripper_right_joint   (ngón phải, gripper_right3)  : đóng khi DƯƠNG (đối xứng)
+    - Bốn khớp linkage còn lại (left1/left2/right1/right2) HÀN CỐ ĐỊNH ở pose 0.
+      => KHÔNG dùng <mimic> nữa: tránh lỗi "physics does not support mimic constraints"
+         và tránh các khớp tự do bị xoay lung tung khi cánh tay chuyển động.
+    - Collision là box primitive (nhẹ physics). grasp_center = điểm gắp (attach + MoveIt EE).
   -->
   <xacro:property name="gmesh" value="package://mycobot_description/meshes/adaptive_gripper"/>
   <xacro:property name="gvel" value="2.0"/>
   <xacro:property name="geff" value="20.0"/>
 
+  <!-- Ngón KHÔNG có collision: tránh 2 ngón tự va/kẹt cứng làm kẹt controller.
+       Việc gắp vật xử lý bằng attach/detach nên ngón không cần collision vật lý. -->
   <xacro:macro name="finger_link" params="name mesh_file ox oy oz">
     <link name="${name}">
       <visual>
         <geometry><mesh filename="${gmesh}/${mesh_file}"/></geometry>
         <origin xyz="${ox} ${oy} ${oz}" rpy="0 0 0"/>
       </visual>
-      <collision>
-        <geometry><box size="0.02 0.03 0.01"/></geometry>
-        <origin xyz="${ox} ${oy} ${oz}" rpy="0 0 0"/>
-      </collision>
       <xacro:box_inertial mass="0.02" size="0.015"/>
     </link>
   </xacro:macro>
@@ -48,14 +45,15 @@
     <xacro:box_inertial mass="0.1" size="0.03"/>
   </link>
 
+  <!-- left2/right2 (tấm bản giữa của cơ cấu 4-thanh) bị bỏ: chúng cần mimic để chuyển
+       động, mà Gazebo không hỗ trợ; giữ lại thì đứng yên và chồng lên vùng ngón đóng.
+       Giữ mỗi bên 2 link: proximal (left3/right3, được điều khiển) + tip (left1/right1). -->
   <xacro:finger_link name="gripper_left1"  mesh_file="gripper_left1.dae"  ox="0.039"  oy="-0.0133" oz="-0.012"/>
-  <xacro:finger_link name="gripper_left2"  mesh_file="gripper_left2.dae"  ox="0.005"  oy="-0.0195" oz="-0.012"/>
   <xacro:finger_link name="gripper_left3"  mesh_file="gripper_left3.dae"  ox="0.012"  oy="0.0025"  oz="-0.012"/>
   <xacro:finger_link name="gripper_right1" mesh_file="gripper_right1.dae" ox="-0.039" oy="-0.0133" oz="-0.012"/>
-  <xacro:finger_link name="gripper_right2" mesh_file="gripper_right2.dae" ox="-0.005" oy="-0.0195" oz="-0.012"/>
   <xacro:finger_link name="gripper_right3" mesh_file="gripper_right3.dae" ox="-0.012" oy="0.0025"  oz="-0.012"/>
 
-  <!-- Khớp điều khiển chính (đã đổi tên) -->
+  <!-- ===== 2 khớp ngón được điều khiển (đối xứng) ===== -->
   <joint name="gripper_finger_joint" type="revolute">
     <axis xyz="0 0 1"/>
     <limit effort="${geff}" lower="-0.74" upper="0.15" velocity="${gvel}"/>
@@ -64,52 +62,27 @@
     <origin xyz="-0.012 0.005 0" rpy="0 0 0"/>
   </joint>
 
-  <joint name="gripper_base_to_gripper_left2" type="revolute">
+  <joint name="gripper_right_joint" type="revolute">
     <axis xyz="0 0 1"/>
-    <limit effort="${geff}" lower="-0.8" upper="0.5" velocity="${gvel}"/>
-    <parent link="gripper_base"/>
-    <child link="gripper_left2"/>
-    <origin xyz="-0.005 0.027 0" rpy="0 0 0"/>
-    <mimic joint="gripper_finger_joint" multiplier="1.0" offset="0"/>
-  </joint>
-
-  <joint name="gripper_left3_to_gripper_left1" type="revolute">
-    <axis xyz="0 0 1"/>
-    <limit effort="${geff}" lower="-0.5" upper="0.5" velocity="${gvel}"/>
-    <parent link="gripper_left3"/>
-    <child link="gripper_left1"/>
-    <origin xyz="-0.027 0.016 0" rpy="0 0 0"/>
-    <mimic joint="gripper_finger_joint" multiplier="-1.0" offset="0"/>
-  </joint>
-
-  <joint name="gripper_base_to_gripper_right3" type="revolute">
-    <axis xyz="0 0 1"/>
-    <limit effort="${geff}" lower="-0.15" upper="0.7" velocity="${gvel}"/>
+    <limit effort="${geff}" lower="-0.15" upper="0.74" velocity="${gvel}"/>
     <parent link="gripper_base"/>
     <child link="gripper_right3"/>
     <origin xyz="0.012 0.005 0" rpy="0 0 0"/>
-    <mimic joint="gripper_finger_joint" multiplier="-1.0" offset="0"/>
   </joint>
 
-  <joint name="gripper_base_to_gripper_right2" type="revolute">
-    <axis xyz="0 0 1"/>
-    <limit effort="${geff}" lower="-0.5" upper="0.8" velocity="${gvel}"/>
-    <parent link="gripper_base"/>
-    <child link="gripper_right2"/>
-    <origin xyz="0.005 0.027 0" rpy="0 0 0"/>
-    <mimic joint="gripper_finger_joint" multiplier="-1.0" offset="0"/>
+  <!-- ===== 4 khớp linkage: HÀN CỐ ĐỊNH ===== -->
+  <joint name="gripper_left3_to_gripper_left1" type="fixed">
+    <parent link="gripper_left3"/>
+    <child link="gripper_left1"/>
+    <origin xyz="-0.027 0.016 0" rpy="0 0 0"/>
   </joint>
-
-  <joint name="gripper_right3_to_gripper_right1" type="revolute">
-    <axis xyz="0 0 1"/>
-    <limit effort="${geff}" lower="-0.5" upper="0.5" velocity="${gvel}"/>
+  <joint name="gripper_right3_to_gripper_right1" type="fixed">
     <parent link="gripper_right3"/>
     <child link="gripper_right1"/>
     <origin xyz="0.027 0.016 0" rpy="0 0 0"/>
-    <mimic joint="gripper_finger_joint" multiplier="1.0" offset="0"/>
   </joint>
 
-  <!-- Điểm gắp: giữa 2 ngón, dùng cho attach vật + MoveIt EE. Offset tạm, tinh chỉnh Phase 6/7. -->
+  <!-- Điểm gắp: giữa 2 ngón. Offset tạm, tinh chỉnh Phase 6/7. -->
   <link name="grasp_center"/>
   <joint name="gripper_base_to_grasp_center" type="fixed">
     <parent link="gripper_base"/>
