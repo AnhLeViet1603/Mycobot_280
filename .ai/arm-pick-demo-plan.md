@@ -82,10 +82,20 @@ spawner chạy trước khi `/controller_manager` sẵn sàng.
 
 **Lỗi có thể gặp:** vật quá to/nhỏ so với gripper; spawn chồng nhau; thiếu inertia/friction → vật trượt/xuyên bàn.
 
-## Phase 6 — Attach/detach grasp
-1. Khi gripper đến gần & đóng → tạo fixed joint giữa `gripper_link` và vật (`DetachableJoint` plugin Gz8,
-   điều khiển qua topic `/attach`, `/detach`), detach khi thả.
-2. Node `grasp_manager` quản lý attach/detach theo tín hiệu từ pick node.
+## Phase 6 — Attach/detach grasp  ✅ (verify ROS-side, chưa test trong Gazebo)
+1. Plugin `DetachableJoint` (gz-sim8) NHÚNG TRONG mỗi vật lúc spawn (không phải trong robot):
+   parent=vật, child_model=`mycobot_280`, child_link=`joint6_flange` (link sống sót sau khi
+   URDF gộp fixed joint — `grasp_center`/`gripper_base` bị gộp mất). Đặt plugin trong vật để robot
+   luôn tồn tại lúc vật spawn (tránh con-gà-quả-trứng); fixed joint đóng băng pose lúc attach.
+   ⚠️ gz-sim8 8.14 KHÔNG có `suppress_initial_attach` → vật bị weld vào cổ tay ngay lúc spawn
+   (tay chạy là vật chạy theo). Khắc phục: grasp_manager gửi detach cho mọi vật lúc khởi động
+   (`detach_on_start`, lặp 5×) để nhả xuống bàn. **Thứ tự bắt buộc: gz → spawn → grasp.**
+   Điều khiển qua topic gz.msgs.Empty `/grasp/obj_i/attach` `/grasp/obj_i/detach`.
+2. Node `grasp_manager` (mycobot_demo): nhận tên vật (std_msgs/String) trên `/grasp/attach|detach`
+   → bắn Empty tới topic vật. `grasp.launch.py` tự bật ros_gz_bridge cầu Empty (ROS→GZ) cho từng vật.
+   Chạy: `make grasp` (sau `make gz` + `make spawn`).
+   Verify headless: SDF+plugin `gz sdf` Valid; bridge Empty↔gz.msgs.Empty OK; grasp_manager tạo đúng
+   topic; String→ATTACH→Empty publish chuẩn. **Chưa test fixed joint thật (Gazebo cần display).**
 
 **Lỗi có thể gặp:** `DetachableJoint` cần parent/child chính xác; attach sai thời điểm → vật văng;
 detach không sạch → vật dính luôn.

@@ -1,25 +1,19 @@
-"""Sinh N vật thể (box/cylinder) kích thước ngẫu nhiên và spawn lên bàn trong Gazebo.
+"""Spawn các vật thể (box/cylinder) tại VỊ TRÍ CỐ ĐỊNH lên bàn trong Gazebo.
+
+Demo đơn giản -> layout xác định (vị trí + kích thước + màu cố định) để Phase 7 hardcode
+pose gắp dễ dàng và mỗi lần chạy giống hệt nhau.
 
 Gọi service Gazebo `/world/<world>/create` (kiểu ros_gz_interfaces/srv/SpawnEntity),
 service này phải được ros_gz_bridge cầu nối sang ROS trước (xem spawn_objects.launch.py).
 
-Mỗi vật:
-  - loại random: box hoặc cylinder
-  - kích thước random NHƯNG trong khoảng gripper kẹp được (width ~2-3.5cm)
-  - màu random, tên duy nhất (obj_0..obj_{N-1})
-  - đặt ngẫu nhiên trong vùng với tới của cánh tay, KHÔNG chồng lên nhau
-  - có <inertial> + friction để không trượt/xuyên bàn
+Mỗi vật: tên obj_0..obj_{N-1}, kích thước gripper kẹp được, <inertial> + friction để không
+trượt/xuyên bàn, nhúng plugin DetachableJoint (Phase 6).
 
 Tham số (ros2 param):
-  num_objects   (int,   default 5)     số vật
+  num_objects   (int,   default 5)     spawn N vật đầu trong FIXED_OBJECTS
   world         (string,default pick_world)
   table_top_z   (double,default 0.4)   cao độ mặt bàn (world frame)
-  seed          (int,   default -1)    <0 = random thật; >=0 = tái lập được
-  x_min,x_max   (double)               vùng spawn theo x (mặc định trước mặt robot)
-  y_min,y_max   (double)
 """
-import math
-import random
 import sys
 
 import rclpy
@@ -28,14 +22,16 @@ from geometry_msgs.msg import Pose
 from ros_gz_interfaces.srv import SpawnEntity
 
 
-# Khoảng kích thước (m) — chọn để gripper myCobot kẹp được.
-BOX_W_RANGE = (0.020, 0.035)     # cạnh đáy hình hộp
-BOX_H_RANGE = (0.030, 0.055)     # chiều cao hộp
-CYL_R_RANGE = (0.010, 0.018)     # bán kính trụ
-CYL_H_RANGE = (0.030, 0.055)     # chiều cao trụ
-
-MIN_SEP = 0.055                  # khoảng cách tâm tối thiểu giữa 2 vật (tránh chồng)
-MAX_PLACE_TRIES = 100
+# Layout CỐ ĐỊNH: 1 hàng trước mặt robot (base ở gốc), trong tầm với, cách nhau ~5cm.
+# Mỗi entry: (kind, dims, x, y, rgba)
+#   kind="box": dims=(sx,sy,sz)        kind="cyl": dims=(radius, length)
+FIXED_OBJECTS = [
+    ("box", (0.030, 0.030, 0.050), -0.10, 0.20, (0.85, 0.15, 0.15, 1.0)),  # đỏ
+    ("cyl", (0.015, 0.050),        -0.05, 0.20, (0.15, 0.70, 0.20, 1.0)),  # lục
+    ("box", (0.028, 0.028, 0.045),  0.00, 0.20, (0.15, 0.35, 0.85, 1.0)),  # lam
+    ("cyl", (0.016, 0.045),         0.05, 0.20, (0.90, 0.75, 0.10, 1.0)),  # vàng
+    ("box", (0.030, 0.030, 0.050),  0.10, 0.20, (0.70, 0.20, 0.75, 1.0)),  # tím
+]
 
 
 def box_inertia(mass, sx, sy, sz):
@@ -51,27 +47,52 @@ def cyl_inertia(mass, r, h):
     return ixx, iyy, izz
 
 
-def make_box_sdf(name, sx, sy, sz, rgba):
+def grasp_plugin_xml(name, robot_name, robot_link):
+    """Plugin DetachableJoint đặt TRONG vật (Phase 6).
+
+    Đặt plugin trong vật (không phải robot) để tránh bài toán con-gà-quả-trứng:
+    robot đã tồn tại khi vật spawn nên child_model luôn tìm thấy.
+    Fixed joint đóng băng pose tương đối lúc attach -> chọn joint6_flange (tâm lòng
+    bàn tay, link sống sót sau khi URDF gộp fixed joint) làm mỏ neo ổn định.
+
+    LƯU Ý: plugin gz-sim8 (8.14) KHÔNG hỗ trợ <suppress_initial_attach> -> vật LUÔN bị
+    weld vào robot ngay lúc spawn (dính cứng vào cổ tay, tay chạy là vật chạy theo).
+    -> grasp_manager gửi detach cho mọi vật lúc khởi động (detach_on_start) để "nhả" xuống bàn;
+       khi gắp thì attach lại (plugin re-attach ở pose hiện tại). Điều khiển qua gz.msgs.Empty.
+    """
+    return f"""
+      <plugin filename="gz-sim-detachable-joint-system"
+              name="gz::sim::systems::DetachableJoint">
+        <parent_link>link</parent_link>
+        <child_model>{robot_name}</child_model>
+        <child_link>{robot_link}</child_link>
+        <attach_topic>/grasp/{name}/attach</attach_topic>
+        <detach_topic>/grasp/{name}/detach</detach_topic>
+        <output_topic>/grasp/{name}/state</output_topic>
+      </plugin>"""
+
+
+def make_box_sdf(name, sx, sy, sz, rgba, grasp_plugin=""):
     mass = 0.05
     ixx, iyy, izz = box_inertia(mass, sx, sy, sz)
     return _wrap_sdf(
         name, mass, ixx, iyy, izz,
         geometry=f"<box><size>{sx:.4f} {sy:.4f} {sz:.4f}</size></box>",
-        rgba=rgba,
+        rgba=rgba, grasp_plugin=grasp_plugin,
     )
 
 
-def make_cylinder_sdf(name, r, h, rgba):
+def make_cylinder_sdf(name, r, h, rgba, grasp_plugin=""):
     mass = 0.05
     ixx, iyy, izz = cyl_inertia(mass, r, h)
     return _wrap_sdf(
         name, mass, ixx, iyy, izz,
         geometry=f"<cylinder><radius>{r:.4f}</radius><length>{h:.4f}</length></cylinder>",
-        rgba=rgba,
+        rgba=rgba, grasp_plugin=grasp_plugin,
     )
 
 
-def _wrap_sdf(name, mass, ixx, iyy, izz, geometry, rgba):
+def _wrap_sdf(name, mass, ixx, iyy, izz, geometry, rgba, grasp_plugin=""):
     r, g, b, a = rgba
     return f"""<?xml version="1.0"?>
 <sdf version="1.10">
@@ -97,7 +118,7 @@ def _wrap_sdf(name, mass, ixx, iyy, izz, geometry, rgba):
           <diffuse>{r:.2f} {g:.2f} {b:.2f} {a:.2f}</diffuse>
         </material>
       </visual>
-    </link>
+    </link>{grasp_plugin}
   </model>
 </sdf>"""
 
@@ -105,26 +126,21 @@ def _wrap_sdf(name, mass, ixx, iyy, izz, geometry, rgba):
 class ObjectSpawner(Node):
     def __init__(self):
         super().__init__("object_spawner")
-        self.declare_parameter("num_objects", 5)
+        self.declare_parameter("num_objects", len(FIXED_OBJECTS))
         self.declare_parameter("world", "pick_world")
         self.declare_parameter("table_top_z", 0.4)
-        self.declare_parameter("seed", -1)
-        self.declare_parameter("x_min", -0.12)
-        self.declare_parameter("x_max", 0.12)
-        self.declare_parameter("y_min", 0.14)
-        self.declare_parameter("y_max", 0.26)
+        # Phase 6: nhúng plugin DetachableJoint vào mỗi vật để attach/detach lúc gắp.
+        self.declare_parameter("enable_grasp_plugin", True)
+        self.declare_parameter("robot_name", "mycobot_280")
+        self.declare_parameter("attach_link", "joint6_flange")
 
         p = self.get_parameter
-        self.num = p("num_objects").value
+        self.num = min(p("num_objects").value, len(FIXED_OBJECTS))
         world = p("world").value
         self.table_z = p("table_top_z").value
-        self.xr = (p("x_min").value, p("x_max").value)
-        self.yr = (p("y_min").value, p("y_max").value)
-
-        seed = p("seed").value
-        self.rng = random.Random(None if seed < 0 else seed)
-        if seed >= 0:
-            self.get_logger().info(f"Dùng seed cố định = {seed} (tái lập được)")
+        self.enable_grasp = p("enable_grasp_plugin").value
+        self.robot_name = p("robot_name").value
+        self.attach_link = p("attach_link").value
 
         self.srv_name = f"/world/{world}/create"
         self.cli = self.create_client(SpawnEntity, self.srv_name)
@@ -139,41 +155,24 @@ class ObjectSpawner(Node):
             return False
         return True
 
-    def _random_object(self, name):
-        """Trả về (sdf, half_height) cho 1 vật random; half_height để đặt lên mặt bàn."""
-        rgba = (self.rng.random(), self.rng.random(), self.rng.random(), 1.0)
-        if self.rng.random() < 0.5:
-            sx = self.rng.uniform(*BOX_W_RANGE)
-            sy = self.rng.uniform(*BOX_W_RANGE)
-            sz = self.rng.uniform(*BOX_H_RANGE)
-            return make_box_sdf(name, sx, sy, sz, rgba), sz / 2.0
-        r = self.rng.uniform(*CYL_R_RANGE)
-        h = self.rng.uniform(*CYL_H_RANGE)
-        return make_cylinder_sdf(name, r, h, rgba), h / 2.0
-
-    def _random_xy(self, placed):
-        """Tìm vị trí (x,y) không chồng lên các vật đã đặt."""
-        for _ in range(MAX_PLACE_TRIES):
-            x = self.rng.uniform(*self.xr)
-            y = self.rng.uniform(*self.yr)
-            if all(math.hypot(x - px, y - py) >= MIN_SEP for px, py in placed):
-                return x, y
-        return None
+    def _build_object(self, name, spec):
+        """Trả về (sdf, half_height) từ 1 entry FIXED_OBJECTS; half_height để đặt lên mặt bàn."""
+        kind, dims, _x, _y, rgba = spec
+        plugin = (grasp_plugin_xml(name, self.robot_name, self.attach_link)
+                  if self.enable_grasp else "")
+        if kind == "box":
+            sx, sy, sz = dims
+            return make_box_sdf(name, sx, sy, sz, rgba, plugin), sz / 2.0
+        r, h = dims
+        return make_cylinder_sdf(name, r, h, rgba, plugin), h / 2.0
 
     def spawn_all(self):
-        placed = []
         ok = 0
         for i in range(self.num):
             name = f"obj_{i}"
-            xy = self._random_xy(placed)
-            if xy is None:
-                self.get_logger().warn(
-                    f"Không tìm được chỗ trống cho {name} sau {MAX_PLACE_TRIES} lần thử "
-                    f"(vùng spawn quá nhỏ hoặc quá nhiều vật) — bỏ qua."
-                )
-                continue
-            x, y = xy
-            sdf, half_h = self._random_object(name)
+            spec = FIXED_OBJECTS[i]
+            x, y = spec[2], spec[3]
+            sdf, half_h = self._build_object(name, spec)
 
             req = SpawnEntity.Request()
             req.entity_factory.name = name
@@ -190,7 +189,6 @@ class ObjectSpawner(Node):
             rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
             res = future.result()
             if res is not None and res.success:
-                placed.append((x, y))
                 ok += 1
                 self.get_logger().info(f"Spawn {name} @ ({x:+.3f}, {y:+.3f})")
             else:

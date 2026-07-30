@@ -1,8 +1,8 @@
-"""Cầu service create của Gazebo sang ROS rồi spawn N vật random lên bàn.
+"""Cầu service create của Gazebo sang ROS rồi spawn N vật (vị trí cố định) lên bàn.
 
 Chạy SAU khi bringup.launch.py đã lên (Gazebo + world pick_world đang chạy):
   ros2 launch object_spawner spawn_objects.launch.py
-  ros2 launch object_spawner spawn_objects.launch.py num_objects:=3 seed:=42
+  ros2 launch object_spawner spawn_objects.launch.py num_objects:=3
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -14,7 +14,6 @@ from launch_ros.parameter_descriptions import ParameterValue
 def generate_launch_description():
     world = LaunchConfiguration("world")
     num_objects = LaunchConfiguration("num_objects")
-    seed = LaunchConfiguration("seed")
 
     # Cầu service Gazebo /world/<world>/create -> ROS (chỉ ROS->GZ, forward request).
     create_service = PythonExpression(
@@ -36,7 +35,6 @@ def generate_launch_description():
         parameters=[{
             "world": world,
             "num_objects": ParameterValue(num_objects, value_type=int),
-            "seed": ParameterValue(seed, value_type=int),
             "use_sim_time": True,
         }],
     )
@@ -44,8 +42,6 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("world", default_value="pick_world"),
         DeclareLaunchArgument("num_objects", default_value="5"),
-        DeclareLaunchArgument("seed", default_value="-1",
-                              description=">=0 để tái lập layout; <0 = random thật"),
         create_bridge,
         spawner,
     ])

@@ -9,7 +9,8 @@
 #   make gz         -> bringup Gazebo (Phase 2)
 #   make moveit     -> move_group MoveIt 2 (Phase 4)
 #   make rviz-moveit-> RViz MotionPlanning plan/execute (Phase 4)
-#   make spawn      -> spawn N vật random lên bàn (Phase 5; n=<số> s=<seed>)
+#   make spawn      -> spawn N vật (vị trí cố định) lên bàn (Phase 5; n=<số>)
+#   make grasp      -> bridge attach/detach + grasp_manager (Phase 6; n=<số vật>)
 #   make check      -> parse xacro 2 mode + check_urdf (không cần GUI)
 #   make source     -> in lệnh source
 #   make clean      -> xoá build/ install/ log/
@@ -68,10 +69,14 @@ moveit:
 rviz-moveit:
 	@$(call ros_run, ros2 launch mycobot_moveit_config moveit_rviz.launch.py)
 
-## spawn: spawn N vật random lên bàn (Phase 5, cần Gazebo đang chạy). n=<số> s=<seed>
+## spawn: spawn N vật (vị trí cố định) lên bàn (Phase 5, cần Gazebo đang chạy). n=<số>
 spawn:
 	@$(call ros_run, ros2 launch object_spawner spawn_objects.launch.py \
-	  $(if $(n),num_objects:=$(n),) $(if $(s),seed:=$(s),))
+	  $(if $(n),num_objects:=$(n),))
+
+## grasp: bridge attach/detach + grasp_manager (Phase 6, cần bringup + spawn). n=<số vật>
+grasp:
+	@$(call ros_run, ros2 launch mycobot_demo grasp.launch.py $(if $(n),num_objects:=$(n),))
 
 ## kill: dọn server gz còn sót (nếu bị kẹt)
 kill:

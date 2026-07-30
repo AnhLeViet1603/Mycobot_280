@@ -1,3 +1,6 @@
+import os
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'mycobot_demo'
@@ -10,6 +13,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -22,6 +26,7 @@ setup(
         'console_scripts': [
             'test_arm = mycobot_demo.test_arm_trajectory:main',
             'test_gripper = mycobot_demo.test_gripper:main',
+            'grasp_manager = mycobot_demo.grasp_manager:main',
         ],
     },
 )
