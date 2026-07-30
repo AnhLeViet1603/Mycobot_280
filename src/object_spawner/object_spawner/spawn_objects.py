@@ -22,17 +22,19 @@ from geometry_msgs.msg import Pose
 from ros_gz_interfaces.srv import SpawnEntity
 
 
-# Layout CỐ ĐỊNH: cung bán kính 0.18 m trước mặt robot (base ở gốc), azimuth 58..122 độ,
-# cách nhau ~5cm. Đã kiểm IK: cả 5 vật đều với tới được với hướng gripper (roll=pi, pitch=1.4,
-# yaw=atan2(y,x)) — xem pick_and_place.py. Top-down KHÔNG với tới được với cánh tay nhỏ này.
+# Layout CỐ ĐỊNH: cung bán kính 0.24 m trước mặt robot (base ở gốc), azimuth 50..130 độ,
+# cách nhau ~8.4cm tâm-tới-tâm (khe ~5cm giữa 2 vật) -> gắp 1 vật KHÔNG đụng vật kế bên.
+# Đã kiểm bằng harvest FK: cả 5 vật với tới được bằng grasp GẦN TOP-DOWN (nghiêng <11 độ),
+# GRASP_CONFIGS/PLACE_CONFIG trong pick_and_place.py sinh cùng lượt (scratchpad harvest.py).
+# Nếu đổi R/azimuth ở đây, phải sinh lại các config đó cho khớp.
 # Mỗi entry: (kind, dims, x, y, rgba)
 #   kind="box": dims=(sx,sy,sz)        kind="cyl": dims=(radius, length)
 FIXED_OBJECTS = [
-    ("box", (0.030, 0.030, 0.050),  0.095, 0.153, (0.85, 0.15, 0.15, 1.0)),  # đỏ
-    ("cyl", (0.015, 0.050),         0.050, 0.173, (0.15, 0.70, 0.20, 1.0)),  # lục
-    ("box", (0.028, 0.028, 0.045),  0.000, 0.180, (0.15, 0.35, 0.85, 1.0)),  # lam
-    ("cyl", (0.016, 0.045),        -0.050, 0.173, (0.90, 0.75, 0.10, 1.0)),  # vàng
-    ("box", (0.030, 0.030, 0.050), -0.095, 0.153, (0.70, 0.20, 0.75, 1.0)),  # tím
+    ("box", (0.030, 0.030, 0.050),  0.1543, 0.1839, (0.85, 0.15, 0.15, 1.0)),  # đỏ   (az 50)
+    ("cyl", (0.015, 0.050),         0.0821, 0.2255, (0.15, 0.70, 0.20, 1.0)),  # lục  (az 70)
+    ("box", (0.028, 0.028, 0.045),  0.0000, 0.2400, (0.15, 0.35, 0.85, 1.0)),  # lam  (az 90)
+    ("cyl", (0.016, 0.045),        -0.0821, 0.2255, (0.90, 0.75, 0.10, 1.0)),  # vàng (az 110)
+    ("box", (0.030, 0.030, 0.050), -0.1543, 0.1839, (0.70, 0.20, 0.75, 1.0)),  # tím  (az 130)
 ]
 
 

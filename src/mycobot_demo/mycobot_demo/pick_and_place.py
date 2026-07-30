@@ -12,11 +12,12 @@ Chuỗi cho mỗi vật obj_i:
 Chạy qua launch (cần nạp param MoveIt): ros2 launch mycobot_moveit_config pick_and_place.launch.py
 (yêu cầu bringup + spawn + grasp đang chạy).
 
-LƯU Ý: myCobot 280 tầm với nhỏ -> top-down KHÔNG với tới được. Dùng JOINT-SPACE GOAL với cấu
-hình khớp PRECOMPUTE bằng IK offline (GRASP_CONFIGS/PLACE_CONFIG) thay vì pose goal: joint-space
-plan ổn định, KHÔNG phụ thuộc start-state (pose goal fail khi chained từ 'ready' trong Gazebo thật).
-Các config ứng với layout cung r=0.18 (object_spawner) + hướng gắp rpy=(pi,1.4,atan2(y,x)) tại z=0.45.
-Nếu đổi layout/kích thước, dò lại IK và cập nhật các mảng dưới (xem script scratchpad cfg.py).
+Dùng JOINT-SPACE GOAL với cấu hình khớp PRECOMPUTE (GRASP_CONFIGS/PLACE_CONFIG) thay vì pose
+goal: joint-space plan ổn định, KHÔNG phụ thuộc start-state (pose goal fail khi chained từ
+'ready' trong Gazebo thật). Các config ứng layout cung r=0.24, azimuth 50..130 (object_spawner),
+gắp GẦN TOP-DOWN (nghiêng <11 độ). Bố cục thưa (~8.4cm giữa các vật) nên gắp vật này không
+đụng vật kế bên. Nếu đổi layout/kích thước, sinh lại config bằng scratchpad harvest.py (harvest
+FK: chọn cấu hình khớp đưa grasp_center tới vật với hướng ít nghiêng nhất, verify plan-able).
 """
 import os
 import time
@@ -44,18 +45,19 @@ GRIPPER_JOINTS = ["gripper_finger_joint", "gripper_right_joint"]
 GRIPPER_OPEN = [0.0, 0.0]
 GRIPPER_CLOSE = [-0.4, 0.4]
 
-# Cấu hình khớp GẮP cho từng vật (index khớp FIXED_OBJECTS). Precompute bằng IK offline,
-# SEED TỪ 'ready' để nằm gần ready (nhánh nhất quán, plan ready->config dễ). Đã verify
-# collision-free + plan ready->config = True cho cả 5 (scratchpad chain3.py).
+# Cấu hình khớp GẮP cho từng vật (index khớp FIXED_OBJECTS). Sinh bằng "harvest FK": lấy mẫu
+# cấu hình khớp hợp lệ, chọn cái đưa grasp_center TỚI vị trí vật với hướng GẦN TOP-DOWN
+# (nghiêng <11 độ) — không ép công thức hướng cố định. Mỗi config đã verify collision-free +
+# plan ready->config = True (scratchpad harvest.py). Ứng layout cung r=0.24, az 50..130.
 GRASP_CONFIGS = [
-    [1.9832, -1.8571, 0.293, -1.5792, -0.6108, -1.399],    # obj_0 (+0.095,+0.153)
-    [2.2576, -1.8572, 0.2933, -1.5794, -0.6108, -1.399],   # obj_1 (+0.050,+0.173)
-    [2.5392, -1.5825, -0.2977, -1.2631, -0.6104, -1.399],  # obj_2 (+0.000,+0.180)
-    [-0.9412, 1.59, 0.2813, 1.2745, 1.911, -1.3961],       # obj_3 (-0.050,+0.173)
-    [-0.6669, 1.5904, 0.2804, 1.275, 1.9109, -1.3961],     # obj_4 (-0.095,+0.153)
+    [1.5503, -0.9718, -2.1387, -0.0744, -2.2512, -0.0008],  # obj_0 (+0.154,+0.184) tilt 2.8
+    [2.0171, -0.7109, -2.1363, -0.4596, -2.3518, 0.15],     # obj_1 (+0.082,+0.226) tilt 7.3
+    [-1.3763, 1.2789, 1.6197, 0.1092, 0.9192, -0.0669],     # obj_2 (+0.000,+0.240) tilt 4.8
+    [1.7338, -2.2824, 0.8249, -1.435, 1.9574, 0.1275],      # obj_3 (-0.082,+0.226) tilt 7.7
+    [-1.8443, 1.1645, 1.5469, 1.1844, -1.3255, -0.7505],    # obj_4 (-0.154,+0.184) tilt 10.1
 ]
-# Cấu hình khớp THẢ (khay đích ~(-0.15,0.06,0.47)).
-PLACE_CONFIG = [-2.4733, -1.2225, -0.8745, -1.0463, -0.53, -1.3992]
+# Cấu hình khớp THẢ (khay đích ~(-0.20,0.10), gần top-down tilt 3.0).
+PLACE_CONFIG = [-0.0714, 1.5998, 0.8123, 0.5351, 1.3757, -0.1476]
 
 
 class PickAndPlace:
