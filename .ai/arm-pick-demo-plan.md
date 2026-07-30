@@ -105,18 +105,34 @@ detach không sạch → vật dính luôn.
    pre-grasp → hạ → đóng gripper → ATTACH → nhấc → trên khay → mở gripper → DETACH → retreat.
    Gripper dùng named state open/closed (SRDF); attach/detach publish tên vật lên /grasp/attach|detach
    (grasp_manager Phase 6). Mỗi vật try/except độc lập, fail thì về ready sang vật kế.
-2. Pose gắp tính từ FIXED_OBJECTS (import từ object_spawner): top-down tại (x,y, table+h+clearance).
-   Khay đích PLACE_XY cố định. Launch `mycobot_moveit_config/pick_and_place.launch.py` nạp param MoveIt.
-   Chạy: `make pick` (sau gz + spawn + grasp).
-   ⚠️ Điểm tinh chỉnh khi test thật: ORIENT_RPY (hướng gripper), APPROACH/GRASP height, PLACE_XY —
-   myCobot tầm với nhỏ + KDL IK có thể không giải được vài pose (cân nhắc trac-ik/pick-ik nếu fail nhiều).
+2. Pose gắp tính từ FIXED_OBJECTS: hướng chĩa về vật `rpy=(pi,1.4,atan2(y,x))` tại z=0.45.
+   Launch `mycobot_moveit_config/pick_and_place.launch.py` nạp param MoveIt. Chạy: `make pick`.
+   ⚠️ Đã sửa 2 lỗi lớn (xem memory [[phase7-moveit-py-and-ik]]):
+   - moveit_py cần `planning_pipelines.pipeline_names` (không phải list) + param dạng `/**` wildcard.
+   - myCobot KHÔNG top-down được (IK 0/15) → dùng side-grasp + layout vật thành cung r=0.18.
+   Verify headless: **plan 5/5 vật thành công** trọn chuỗi (grasp/attach/place/detach).
+   - Dùng JOINT-SPACE goal (config precompute IK), KHÔNG pose goal: pose goal chỉ được obj_0 trong
+     Gazebo thật (nhạy start-state khi chained từ ready); joint-space ổn định 5/5.
+   - Chặn segfault moveit_py lúc thoát bằng os._exit(0).
+   - z<0.45 không với tới (tay nhỏ) → grasp_center chỉ chạm ĐỈNH vật; attach giả trông có thể hơi
+     "cách vật" — là giới hạn tầm với, không phải bug.
+   - GRIPPER điều khiển thẳng qua gripper_controller action, KHÔNG qua MoveIt: 2 khớp ngón flop
+     out-of-bounds → MoveIt báo start-state invalid → `gripper->closed/open PLAN THẤT BẠI` (chỉ 1/5).
+     Chỉ ARM dùng MoveIt. (xem [[phase7-moveit-py-and-ik]] mục 5)
+   ✅✅ ĐÃ CHẠY THẬT TRONG GAZEBO: **5/5 vật** trọn chuỗi (grasp/attach/place/detach). Demo hoàn chỉnh.
+   (Vô hại: vài `arm->ready exec status=ABORTED` ở bước warmup/retreat không kiểm — goal ~= current
+   nên JTC abort trajectory rỗng; không ảnh hưởng luồng.)
 
 **Lỗi có thể gặp:** pose gắp không reachable → plan fail (cần fallback/retry); thứ tự attach vs đóng gripper sai;
 collision với bàn/vật khác chưa add vào planning scene.
 
-## Phase 8 — Tích hợp & demo
-1. `demo.launch.py` gộp toàn bộ; 1 lệnh cho buổi demo thứ 6.
-2. Chạy thử nhiều lần với size random khác nhau; quay video dự phòng nếu GUI/WSL trục trặc.
+## Phase 8 — Tích hợp & demo  ✅ (demo.launch.py xong, verify parse; chưa chạy Gazebo)
+1. `mycobot_bringup/demo.launch.py` gộp toàn bộ bằng include lại 4 launch phase, xếp thời gian
+   tuần tự (TimerAction): bringup(0) → spawn(8s) → grasp(12s) → pick(20s). Args: gui, num_objects,
+   auto_pick (false = chỉ dựng cảnh, không tự pick). 1 lệnh: `make demo` (hoặc `make demo ap=false`).
+   Verify: `--show-args` resolve đủ 4 include lồng nhau.
+   ⚠️ Mốc thời gian chỉnh theo tốc độ máy (WSL RTF thấp có thể cần tăng).
+2. ✅ Đã chạy `make demo` end-to-end trong Gazebo: gắp đủ 5 vật. Nên quay video dự phòng cho buổi demo.
 
 **Lỗi có thể gặp:** timing giữa các launch; RNG seed khiến layout bất khả thi (đặt giới hạn vùng spawn).
 

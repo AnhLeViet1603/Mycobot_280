@@ -18,6 +18,9 @@
   <exec_depend>joint_state_broadcaster</exec_depend>
   <exec_depend>joint_trajectory_controller</exec_depend>
   <exec_depend>gz_ros2_control</exec_depend>
+  <exec_depend>object_spawner</exec_depend>
+  <exec_depend>mycobot_demo</exec_depend>
+  <exec_depend>mycobot_moveit_config</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

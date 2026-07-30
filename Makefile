@@ -12,6 +12,7 @@
 #   make spawn      -> spawn N vật (vị trí cố định) lên bàn (Phase 5; n=<số>)
 #   make grasp      -> bridge attach/detach + grasp_manager (Phase 6; n=<số vật>)
 #   make pick       -> chạy pick-and-place (Phase 7; n=<số vật>)
+#   make demo       -> CHẠY TOÀN BỘ 1 lệnh (Phase 8; n=<số vật>, ap=false để không tự pick)
 #   make check      -> parse xacro 2 mode + check_urdf (không cần GUI)
 #   make source     -> in lệnh source
 #   make clean      -> xoá build/ install/ log/
@@ -83,6 +84,11 @@ grasp:
 pick:
 	@$(call ros_run, ros2 launch mycobot_moveit_config pick_and_place.launch.py \
 	  $(if $(n),num_objects:=$(n),))
+
+## demo: CHẠY TOÀN BỘ 1 lệnh (Phase 8): gz+spawn+grasp+pick. n=<số vật>; ap=false để không tự pick
+demo:
+	@$(call ros_run, ros2 launch mycobot_bringup demo.launch.py \
+	  $(if $(n),num_objects:=$(n),) $(if $(ap),auto_pick:=$(ap),))
 
 ## kill: dọn server gz còn sót (nếu bị kẹt)
 kill:

@@ -22,15 +22,17 @@ from geometry_msgs.msg import Pose
 from ros_gz_interfaces.srv import SpawnEntity
 
 
-# Layout CỐ ĐỊNH: 1 hàng trước mặt robot (base ở gốc), trong tầm với, cách nhau ~5cm.
+# Layout CỐ ĐỊNH: cung bán kính 0.18 m trước mặt robot (base ở gốc), azimuth 58..122 độ,
+# cách nhau ~5cm. Đã kiểm IK: cả 5 vật đều với tới được với hướng gripper (roll=pi, pitch=1.4,
+# yaw=atan2(y,x)) — xem pick_and_place.py. Top-down KHÔNG với tới được với cánh tay nhỏ này.
 # Mỗi entry: (kind, dims, x, y, rgba)
 #   kind="box": dims=(sx,sy,sz)        kind="cyl": dims=(radius, length)
 FIXED_OBJECTS = [
-    ("box", (0.030, 0.030, 0.050), -0.10, 0.20, (0.85, 0.15, 0.15, 1.0)),  # đỏ
-    ("cyl", (0.015, 0.050),        -0.05, 0.20, (0.15, 0.70, 0.20, 1.0)),  # lục
-    ("box", (0.028, 0.028, 0.045),  0.00, 0.20, (0.15, 0.35, 0.85, 1.0)),  # lam
-    ("cyl", (0.016, 0.045),         0.05, 0.20, (0.90, 0.75, 0.10, 1.0)),  # vàng
-    ("box", (0.030, 0.030, 0.050),  0.10, 0.20, (0.70, 0.20, 0.75, 1.0)),  # tím
+    ("box", (0.030, 0.030, 0.050),  0.095, 0.153, (0.85, 0.15, 0.15, 1.0)),  # đỏ
+    ("cyl", (0.015, 0.050),         0.050, 0.173, (0.15, 0.70, 0.20, 1.0)),  # lục
+    ("box", (0.028, 0.028, 0.045),  0.000, 0.180, (0.15, 0.35, 0.85, 1.0)),  # lam
+    ("cyl", (0.016, 0.045),        -0.050, 0.173, (0.90, 0.75, 0.10, 1.0)),  # vàng
+    ("box", (0.030, 0.030, 0.050), -0.095, 0.153, (0.70, 0.20, 0.75, 1.0)),  # tím
 ]
 
 
