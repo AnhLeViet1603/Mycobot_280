@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: mycobot_description
+    relative_path: urdf/mycobot_280.urdf.xacro
+    xacro_args: use_gz:=false use_world_fixed:=true mount_z:=0.42
+  srdf:
+    relative_path: config/mycobot_280.srdf
+  package_settings:
+    author_name: Vanhdeptraibodoiqua
+    author_email: mgmgd2004@gmail.com
+    generated_timestamp: 1753833600

@@ -56,10 +56,16 @@ inertia không hợp lệ → robot rung/bay.
 **Lỗi có thể gặp:** tên joint controller ≠ URDF; đường dẫn YAML chứa `robot_description` gây fail;
 spawner chạy trước khi `/controller_manager` sẵn sàng.
 
-## Phase 4 — MoveIt 2 config
-1. MoveIt Setup Assistant trên URDF → package `mycobot_moveit_config` (SRDF, kinematics OMPL,
-   planning group `arm` + `gripper`, controllers.yaml trỏ JTC ở Phase 3).
-2. `move_group.launch.py` + RViz MotionPlanning, test plan/execute bằng chuột.
+## Phase 4 — MoveIt 2 config  ✅ (config viết tay, verify headless)
+1. ~~MoveIt Setup Assistant~~ (headless → viết tay) → package `mycobot_moveit_config`:
+   SRDF (group `arm`: g_base→grasp_center; group `gripper`; states home/ready/open/closed),
+   `kinematics.yaml` (KDL), `ompl_planning.yaml`, `joint_limits.yaml`,
+   `moveit_controllers.yaml` (FollowJointTrajectory → arm_controller/gripper_controller ở Phase 3),
+   `.setup_assistant` (xacro use_gz:=false, mount_z:=0.42) cho MoveItConfigsBuilder.
+2. `move_group.launch.py` + `moveit_rviz.launch.py` (MotionPlanning). move_group init OK headless:
+   RobotModel load, KDL arm, OMPL pipeline, 2 controllers registered, capabilities loaded.
+   **Còn phải test plan/execute bằng chuột trong RViz khi có display (WSLg) + bringup chạy.**
+   Lệnh (3 terminal): `make gz` → `make moveit` → `make rviz-moveit`.
 
 **Lỗi có thể gặp:** `moveit_controllers.yaml` không khớp action name của JTC; thiếu mapping ros2_control ↔ MoveIt
 → execute treo; IK không giải được với KDL default (cân nhắc trac-ik/pick-ik).

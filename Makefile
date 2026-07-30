@@ -6,6 +6,9 @@
 #   make            -> build toàn bộ (symlink)
 #   make p=<pkg>    -> build nhanh 1 package (vd: make p=mycobot_description)
 #   make view       -> mở RViz xem robot (Phase 1)
+#   make gz         -> bringup Gazebo (Phase 2)
+#   make moveit     -> move_group MoveIt 2 (Phase 4)
+#   make rviz-moveit-> RViz MotionPlanning plan/execute (Phase 4)
 #   make check      -> parse xacro 2 mode + check_urdf (không cần GUI)
 #   make source     -> in lệnh source
 #   make clean      -> xoá build/ install/ log/
@@ -55,6 +58,14 @@ test-arm:
 ## test-gripper: đóng rồi mở gripper (Phase 3). p=open|close để chỉ 1 chiều
 test-gripper:
 	@$(call ros_run, ros2 run mycobot_demo test_gripper $(if $(a),--ros-args -p action:=$(a),))
+
+## moveit: move_group cho MoveIt 2 (Phase 4, cần Gazebo đang chạy để có /joint_states)
+moveit:
+	@$(call ros_run, ros2 launch mycobot_moveit_config move_group.launch.py)
+
+## rviz-moveit: RViz MotionPlanning để plan/execute bằng chuột (cần moveit + gz đang chạy)
+rviz-moveit:
+	@$(call ros_run, ros2 launch mycobot_moveit_config moveit_rviz.launch.py)
 
 ## kill: dọn server gz còn sót (nếu bị kẹt)
 kill:
