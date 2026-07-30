@@ -100,10 +100,16 @@ spawner chạy trước khi `/controller_manager` sẵn sàng.
 **Lỗi có thể gặp:** `DetachableJoint` cần parent/child chính xác; attach sai thời điểm → vật văng;
 detach không sạch → vật dính luôn.
 
-## Phase 7 — Pick-and-place orchestration
-1. Node `pick_and_place` (moveit_py hoặc MoveGroupInterface C++): lặp 5 vật →
-   approach → đóng gripper → attach → nhấc → di chuyển tới khay đích → mở gripper → detach.
-2. Tính pose gắp từ vị trí + kích thước vật (chiều cao gắp theo size random).
+## Phase 7 — Pick-and-place orchestration  ✅ (viết xong, verify import/logic; chưa test Gazebo)
+1. Node `pick_and_place` (moveit_py) trong mycobot_demo: lặp N vật → ready → mở gripper →
+   pre-grasp → hạ → đóng gripper → ATTACH → nhấc → trên khay → mở gripper → DETACH → retreat.
+   Gripper dùng named state open/closed (SRDF); attach/detach publish tên vật lên /grasp/attach|detach
+   (grasp_manager Phase 6). Mỗi vật try/except độc lập, fail thì về ready sang vật kế.
+2. Pose gắp tính từ FIXED_OBJECTS (import từ object_spawner): top-down tại (x,y, table+h+clearance).
+   Khay đích PLACE_XY cố định. Launch `mycobot_moveit_config/pick_and_place.launch.py` nạp param MoveIt.
+   Chạy: `make pick` (sau gz + spawn + grasp).
+   ⚠️ Điểm tinh chỉnh khi test thật: ORIENT_RPY (hướng gripper), APPROACH/GRASP height, PLACE_XY —
+   myCobot tầm với nhỏ + KDL IK có thể không giải được vài pose (cân nhắc trac-ik/pick-ik nếu fail nhiều).
 
 **Lỗi có thể gặp:** pose gắp không reachable → plan fail (cần fallback/retry); thứ tự attach vs đóng gripper sai;
 collision với bàn/vật khác chưa add vào planning scene.

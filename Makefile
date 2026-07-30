@@ -11,6 +11,7 @@
 #   make rviz-moveit-> RViz MotionPlanning plan/execute (Phase 4)
 #   make spawn      -> spawn N vật (vị trí cố định) lên bàn (Phase 5; n=<số>)
 #   make grasp      -> bridge attach/detach + grasp_manager (Phase 6; n=<số vật>)
+#   make pick       -> chạy pick-and-place (Phase 7; n=<số vật>)
 #   make check      -> parse xacro 2 mode + check_urdf (không cần GUI)
 #   make source     -> in lệnh source
 #   make clean      -> xoá build/ install/ log/
@@ -77,6 +78,11 @@ spawn:
 ## grasp: bridge attach/detach + grasp_manager (Phase 6, cần bringup + spawn). n=<số vật>
 grasp:
 	@$(call ros_run, ros2 launch mycobot_demo grasp.launch.py $(if $(n),num_objects:=$(n),))
+
+## pick: chạy pick-and-place (Phase 7, cần gz + spawn + grasp + moveit). n=<số vật>
+pick:
+	@$(call ros_run, ros2 launch mycobot_moveit_config pick_and_place.launch.py \
+	  $(if $(n),num_objects:=$(n),))
 
 ## kill: dọn server gz còn sót (nếu bị kẹt)
 kill:

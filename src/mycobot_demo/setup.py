@@ -27,6 +27,7 @@ setup(
             'test_arm = mycobot_demo.test_arm_trajectory:main',
             'test_gripper = mycobot_demo.test_gripper:main',
             'grasp_manager = mycobot_demo.grasp_manager:main',
+            'pick_and_place = mycobot_demo.pick_and_place:main',
         ],
     },
 )
