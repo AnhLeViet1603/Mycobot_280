@@ -9,6 +9,7 @@
 #   make gz         -> bringup Gazebo (Phase 2)
 #   make moveit     -> move_group MoveIt 2 (Phase 4)
 #   make rviz-moveit-> RViz MotionPlanning plan/execute (Phase 4)
+#   make spawn      -> spawn N vật random lên bàn (Phase 5; n=<số> s=<seed>)
 #   make check      -> parse xacro 2 mode + check_urdf (không cần GUI)
 #   make source     -> in lệnh source
 #   make clean      -> xoá build/ install/ log/
@@ -66,6 +67,11 @@ moveit:
 ## rviz-moveit: RViz MotionPlanning để plan/execute bằng chuột (cần moveit + gz đang chạy)
 rviz-moveit:
 	@$(call ros_run, ros2 launch mycobot_moveit_config moveit_rviz.launch.py)
+
+## spawn: spawn N vật random lên bàn (Phase 5, cần Gazebo đang chạy). n=<số> s=<seed>
+spawn:
+	@$(call ros_run, ros2 launch object_spawner spawn_objects.launch.py \
+	  $(if $(n),num_objects:=$(n),) $(if $(s),seed:=$(s),))
 
 ## kill: dọn server gz còn sót (nếu bị kẹt)
 kill:

@@ -70,10 +70,15 @@ spawner chạy trước khi `/controller_manager` sẵn sàng.
 **Lỗi có thể gặp:** `moveit_controllers.yaml` không khớp action name của JTC; thiếu mapping ros2_control ↔ MoveIt
 → execute treo; IK không giải được với KDL default (cân nhắc trac-ik/pick-ik).
 
-## Phase 5 — Object spawner (5 vật random)
-1. Package `object_spawner`: node Python sinh 5 SDF box/cylinder kích thước random (trong khoảng gripper kẹp được),
-   spawn qua service `/world/.../create`.
-2. Đặt vật vị trí xác định/random trên bàn, mỗi vật tên duy nhất.
+## Phase 5 — Object spawner (5 vật random)  ✅ (verify không cần Gazebo)
+1. Package `object_spawner`: node `spawn_objects.py` sinh N SDF box/cylinder kích thước random
+   (box cạnh 2-3.5cm / trụ r 1-1.8cm — gripper kẹp được), inertia + friction đầy đủ,
+   spawn qua service Gazebo `/world/pick_world/create` (ros_gz_interfaces/srv/SpawnEntity).
+2. `spawn_objects.launch.py` tự bật `ros_gz_bridge` cầu service create + node spawner.
+   Đặt vật random KHÔNG chồng nhau (MIN_SEP=5.5cm, 100 lần thử) trong vùng với tới trước robot
+   (x∈[-0.12,0.12], y∈[0.14,0.26]), mỗi vật tên `obj_i`, seed cố định để tái lập.
+   Chạy: `make spawn` (hoặc `make spawn n=3 s=42`) SAU khi `make gz`.
+   Verify: SDF/inertia hợp lệ, packing 5 vật OK, node + launch parse OK (chưa test spawn thật vì Gazebo cần display).
 
 **Lỗi có thể gặp:** vật quá to/nhỏ so với gripper; spawn chồng nhau; thiếu inertia/friction → vật trượt/xuyên bàn.
 
